@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Water Tank Visualizer</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Water Tank Visualizer</h1>
+            <p>Interactive view of trapped rain water between blocks.</p>
+        </header>
+
+        <main class="app-main">
+            <!-- LEFT: Controls -->
+            <section class="panel panel-left">
+                <h2>Blocks Input</h2>
+
+                <!-- Unique input: height slider + chips -->
+                <div class="chip-input">
+                    <div class="chip-list" id="chipList"></div>
+
+                    <div class="slider-row">
+                        <div class="slider-info">
+                            <span class="slider-label">Slide & click “Add”</span>
+                        </div>
+
+                        <div class="slider-group">
+                            <input id="heightSlider" type="range" min="0" max="10" value="4" />
+                            <span id="sliderValue" class="slider-value">4</span>
+                            <button id="addHeightBtn" class="slider-add-btn">Add</button>
+                        </div>
+                    </div>
+
+
+
+                    <div class="chip-actions">
+                        <button id="resetDefaultBtn" class="secondary-btn">
+                            Load example
+                        </button>
+                        <button id="clearAllBtn" class="secondary-btn danger">
+                            Clear all
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Also keep a text fallback (for power users) -->
+                <div class="text-input-fallback">
+                    <label for="heightsInput">Or paste heights (comma separated):</label>
+                    <input id="heightsInput" type="text" value="0,4,0,0,0,6,0,6,4,0" />
+                </div>
+                <div id="errorText" class="error-text"></div>
+
+                <button id="computeBtn" class="primary-btn">
+                    Compute & Animate
+                </button>
+
+                <p id="resultText" class="result-text">Total water: -</p>
+            </section>
+
+            <!-- RIGHT: Visualization -->
+            <section class="panel panel-right">
+                <h2>Water Tank</h2>
+                <div class="tank-wrapper">
+                    <svg id="visualSvg"></svg>
+                </div>
+                <p class="hint-text">
+                    Dark bars are blocks; blue cells show trapped water. Animation
+                    highlights the fill level.
+                </p>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <span>Interview demo · Trapping Rain Water Problem</span>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

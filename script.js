@@ -1,12 +1,23 @@
 // ---------- Core logic ----------
 
 function parseHeightsFromText(inputStr) {
-  return inputStr
-    .split(",")
-    .map(s => s.trim())
-    .filter(s => s.length > 0)
-    .map(Number)
-    .filter(n => !Number.isNaN(n) && n >= 0);
+  const rawParts = inputStr.split(",");
+  const values = [];
+  let hasInvalid = false;
+
+  for (const part of rawParts) {
+    const trimmed = part.trim();
+    if (trimmed === "") continue;
+
+    const num = Number(trimmed);
+    if (Number.isNaN(num) || num < 0) {
+      hasInvalid = true;
+    } else {
+      values.push(num);
+    }
+  }
+
+  return { values, hasInvalid };
 }
 
 function computeTrappedWater(heights) {
@@ -39,7 +50,7 @@ function computeTrappedWater(heights) {
   return { total, waterAt };
 }
 
-// ---------- SVG drawing with animation ----------
+// ---------- SVG drawing with animation + labels ----------
 
 function drawVisualization(heights, waterAt) {
   const svg = document.getElementById("visualSvg");
@@ -49,12 +60,12 @@ function drawVisualization(heights, waterAt) {
 
   const n = heights.length;
   const maxBar = Math.max(...heights);
-  const maxWater = Math.max(...waterAt);
+  const maxWater = Math.max(...waterAt, 0);
   const maxH = Math.max(maxBar, maxWater + maxBar);
 
   const cellSize = 28;
-  const paddingTopUnits = 2;       // a bit more top space for labels
-  const xAxisUnits = 1.5;          // extra space at bottom for x labels
+  const paddingTopUnits = 2;       // top space for labels
+  const xAxisUnits = 1.5;          // bottom space for x labels
   const width = n * cellSize + 40;
   const height = (maxH + paddingTopUnits + xAxisUnits) * cellSize;
 
@@ -76,7 +87,7 @@ function drawVisualization(heights, waterAt) {
     svg.appendChild(line);
   }
 
-  // ---------- bars ----------
+  // ---------- bars + bar height labels ----------
   for (let i = 0; i < n; i++) {
     const barHeight = heights[i];
 
@@ -92,12 +103,12 @@ function drawVisualization(heights, waterAt) {
       svg.appendChild(rect);
     }
 
-    // ---------- bar height label on top ----------
+    // bar height label
     if (barHeight > 0) {
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       text.textContent = barHeight;
       const xCenter = offsetX + i * cellSize + cellSize / 2;
-      const yTop = baseY - barHeight * cellSize - 6; // a bit above top block
+      const yTop = baseY - barHeight * cellSize - 6;
 
       text.setAttribute("x", xCenter);
       text.setAttribute("y", yTop);
@@ -109,7 +120,7 @@ function drawVisualization(heights, waterAt) {
     }
   }
 
-  // ---------- water with animation ----------
+  // ---------- water with staggered animation ----------
   let delayIndex = 0;
   for (let i = 0; i < n; i++) {
     const barHeight = heights[i];
@@ -137,7 +148,7 @@ function drawVisualization(heights, waterAt) {
   // ---------- X-axis index labels ----------
   for (let i = 0; i < n; i++) {
     const xCenter = offsetX + i * cellSize + cellSize / 2;
-    const yLabel = baseY + 18; // below x-axis
+    const yLabel = baseY + 18;
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.textContent = i + 1; // 1-based index
@@ -149,7 +160,7 @@ function drawVisualization(heights, waterAt) {
     svg.appendChild(text);
   }
 
-  // optional: label "index" on x-axis
+  // optional axis label
   const axisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
   axisLabel.textContent = "Block index";
   axisLabel.setAttribute("x", width / 2);
@@ -203,6 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const textInput = document.getElementById("heightsInput");
   const computeBtn = document.getElementById("computeBtn");
   const resultText = document.getElementById("resultText");
+  const errorEl = document.getElementById("errorText");
 
   // internal chip state
   let chips = [0, 4, 0, 0, 0, 6, 0, 6, 4, 0];
@@ -219,29 +231,49 @@ document.addEventListener("DOMContentLoaded", () => {
     chips.push(val);
     renderChips(chips);
     syncTextFromChips(chips);
+    errorEl.textContent = "";
   });
 
   resetBtn.addEventListener("click", () => {
     chips = [0, 4, 0, 0, 0, 6, 0, 6, 4, 0];
     renderChips(chips);
     syncTextFromChips(chips);
+    errorEl.textContent = "";
   });
 
   clearBtn.addEventListener("click", () => {
     chips = [];
     renderChips(chips);
     syncTextFromChips(chips);
+    errorEl.textContent = "";
+    resultText.textContent = "Total water: -";
+    drawVisualization([], []);
   });
 
   // keep chips synced when user types manually
   textInput.addEventListener("change", () => {
-    const arr = parseHeightsFromText(textInput.value);
-    chips = arr;
+    const { values } = parseHeightsFromText(textInput.value);
+    chips = values;
     renderChips(chips);
+    // do not compute automatically here; wait for button
   });
 
   function handleCompute() {
-    const heights = parseHeightsFromText(textInput.value);
+    const { values: heights, hasInvalid } = parseHeightsFromText(textInput.value);
+
+    if (heights.length === 0) {
+      errorEl.textContent = "Please enter at least one non‑negative number.";
+      resultText.textContent = "Total water: -";
+      drawVisualization([], []);
+      return;
+    }
+
+    if (hasInvalid) {
+      errorEl.textContent = "Some values were ignored (only numbers ≥ 0 are used).";
+    } else {
+      errorEl.textContent = "";
+    }
+
     const { total, waterAt } = computeTrappedWater(heights);
     resultText.textContent = `Total water: ${total} units`;
     drawVisualization(heights, waterAt);
